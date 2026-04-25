@@ -1,12 +1,11 @@
 // ============================================
-// FULL SCREEN AUTO SLIDESHOW
+// FULL SCREEN SLIDESHOW - TAP/SWIPE CONTROL ONLY
 // ============================================
 
 let currentSlide = 0;
 let totalSlides = 0;
-let isPlaying = true;
-let slideTimeout = null;
 let currentAudio = null;
+let slideTimeout = null;
 
 // Get all slides
 const slides = document.querySelectorAll('.slide');
@@ -21,7 +20,7 @@ function showSlide(index) {
         currentAudio = null;
     }
     
-    // Clear existing timeout
+    // Clear any pending timeout
     if (slideTimeout) {
         clearTimeout(slideTimeout);
         slideTimeout = null;
@@ -42,35 +41,17 @@ function showSlide(index) {
     // Check if this is the cake slide
     const isCakeSlide = slides[index].querySelector('.cake-container') !== null;
     
-    // Get duration
-    let duration = parseInt(slides[index].getAttribute('data-duration')) || 10;
-    
-    // If cake slide, disable timer
+    // Update music status
     if (isCakeSlide) {
-        duration = 0;
-        document.getElementById('musicStatus').innerHTML = '🍰 Cake time! No auto-advance 🍰';
-        
-        // Update pause button appearance
-        const pauseBtn = document.getElementById('pausePlayBtn');
-        if (pauseBtn) pauseBtn.innerHTML = '🍰 Cake 🍰';
+        document.getElementById('musicStatus').innerHTML = '🍰 Cake time! 🍰';
     } else {
-        document.getElementById('musicStatus').innerHTML = '🎵 Playing...';
-        const pauseBtn = document.getElementById('pausePlayBtn');
-        if (pauseBtn && isPlaying) pauseBtn.innerHTML = '⏸️ Pause';
-        else if (pauseBtn && !isPlaying) pauseBtn.innerHTML = '▶️ Play';
+        document.getElementById('musicStatus').innerHTML = '🎵 Tap side to change slide 🎵';
     }
     
     // Play audio for slide (if not cake slide)
     const audioFile = slides[index].getAttribute('data-audio');
     if (audioFile && audioFile !== '' && !isCakeSlide) {
         playAudioForSlide(audioFile);
-    }
-    
-    // Setup auto-advance only if duration > 0 and playing
-    if (duration > 0 && isPlaying && !isCakeSlide) {
-        slideTimeout = setTimeout(() => {
-            nextSlide();
-        }, duration * 1000);
     }
 }
 
@@ -91,56 +72,72 @@ function playAudioForSlide(audioSrc) {
     }
 }
 
-// Next slide
+// Next slide (Right tap / Right swipe)
 function nextSlide() {
-    if (!isPlaying) return;
-    
     let nextIndex = currentSlide + 1;
     if (nextIndex >= totalSlides) {
+        // Optional: Loop back to first slide (comment out if you don't want loop)
         nextIndex = 0;
     }
-    
     showSlide(nextIndex);
 }
 
-// Previous slide
+// Previous slide (Left tap / Left swipe)
 function prevSlide() {
     let prevIndex = currentSlide - 1;
     if (prevIndex < 0) {
+        // Optional: Loop to last slide (comment out if you don't want loop)
         prevIndex = totalSlides - 1;
     }
     showSlide(prevIndex);
 }
 
-// Pause/Play
-function togglePlayPause() {
-    const currentSlideElem = slides[currentSlide];
-    const isCakeSlide = currentSlideElem && currentSlideElem.querySelector('.cake-container') !== null;
-    
-    if (isCakeSlide) {
-        return;
-    }
-    
-    isPlaying = !isPlaying;
-    const btn = document.getElementById('pausePlayBtn');
-    
-    if (isPlaying) {
-        btn.innerHTML = '⏸️ Pause';
-        document.getElementById('musicStatus').innerHTML = '🎵 Playing...';
+// ============================================
+// TAP ON LEFT/RIGHT SIDE OF SCREEN
+// ============================================
+
+function initTapControls() {
+    document.addEventListener('click', (e) => {
+        const screenWidth = window.innerWidth;
+        const clickX = e.clientX;
         
-        const duration = parseInt(slides[currentSlide].getAttribute('data-duration')) || 10;
-        if (duration > 0 && slideTimeout) {
-            clearTimeout(slideTimeout);
-            slideTimeout = setTimeout(() => nextSlide(), duration * 1000);
+        // If clicked on left side (previous slide)
+        if (clickX < screenWidth / 2) {
+            prevSlide();
+        } 
+        // If clicked on right side (next slide)
+        else {
+            nextSlide();
         }
-    } else {
-        btn.innerHTML = '▶️ Play';
-        document.getElementById('musicStatus').innerHTML = '⏸️ Paused';
-        if (slideTimeout) {
-            clearTimeout(slideTimeout);
-            slideTimeout = null;
+    });
+}
+
+// ============================================
+// SWIPE CONTROLS (Left/Right Swipe)
+// ============================================
+
+let touchStartX = 0;
+let touchEndX = 0;
+
+function initTouchControls() {
+    document.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    });
+    
+    document.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        const swipeThreshold = 50;
+        
+        // Swipe Left -> Next Slide
+        if (touchEndX < touchStartX - swipeThreshold) {
+            nextSlide();
         }
-    }
+        
+        // Swipe Right -> Previous Slide
+        if (touchEndX > touchStartX + swipeThreshold) {
+            prevSlide();
+        }
+    });
 }
 
 // ============================================
@@ -186,7 +183,8 @@ function initCake() {
         }
     }
     
-    lightBtn.addEventListener('click', () => {
+    lightBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         if (flame1) flame1.classList.remove('hidden');
         if (flame2) flame2.classList.remove('hidden');
         if (flame3) flame3.classList.remove('hidden');
@@ -203,7 +201,8 @@ function initCake() {
     });
     
     if (cutBtn) {
-        cutBtn.addEventListener('click', () => {
+        cutBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             if (cakeMessage) {
                 cakeMessage.innerHTML = '🎂❤️ HAPPY BIRTHDAY DISHU! ❤️🎂<br><br>I will try my best to be there and feed you the first bite. Next time, I promise. ❤️<br><br>जब तक मेरी आखिरी सांस खत्म नहीं होती, तब तक हर जन्मदिन तुम्हारे साथ ❤️';
             }
@@ -252,52 +251,56 @@ function showConfetti() {
 }
 
 // ============================================
-// TOUCH CONTROLS
+// HIDE PROGRESS BAR (No timer needed)
 // ============================================
 
-let touchStartX = 0;
-let touchEndX = 0;
-
-function initTouchControls() {
-    document.addEventListener('touchstart', (e) => {
-        touchStartX = e.changedTouches[0].screenX;
-    });
-    
-    document.addEventListener('touchend', (e) => {
-        touchEndX = e.changedTouches[0].screenX;
-        const swipeThreshold = 50;
-        if (touchEndX < touchStartX - swipeThreshold) {
-            nextSlide();
-        }
-        if (touchEndX > touchStartX + swipeThreshold) {
-            prevSlide();
-        }
+function hideProgressBar() {
+    const progressTimer = document.querySelectorAll('.progress-timer');
+    progressTimer.forEach(timer => {
+        timer.style.display = 'none';
     });
 }
 
 // ============================================
-// INITIALIZE
+// ADD VISUAL HINT (Tap left/right)
+// ============================================
+
+function addTapHint() {
+    const hint = document.createElement('div');
+    hint.className = 'tap-hint';
+    hint.innerHTML = '👈 Tap left = Previous &nbsp;&nbsp;&nbsp; Tap right = Next 👉';
+    hint.style.position = 'fixed';
+    hint.style.bottom = '80px';
+    hint.style.left = '50%';
+    hint.style.transform = 'translateX(-50%)';
+    hint.style.backgroundColor = 'rgba(0,0,0,0.6)';
+    hint.style.color = 'white';
+    hint.style.padding = '10px 20px';
+    hint.style.borderRadius = '40px';
+    hint.style.fontSize = '12px';
+    hint.style.zIndex = '100';
+    hint.style.whiteSpace = 'nowrap';
+    hint.style.backdropFilter = 'blur(5px)';
+    hint.style.fontFamily = 'sans-serif';
+    document.body.appendChild(hint);
+    
+    setTimeout(() => {
+        hint.style.opacity = '0';
+        setTimeout(() => hint.remove(), 1000);
+    }, 4000);
+}
+
+// ============================================
+// INITIALIZE EVERYTHING
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
     showSlide(0);
     setTimeout(initCake, 500);
+    initTapControls();
     initTouchControls();
+    hideProgressBar();
+    addTapHint();
     
-    const pauseBtn = document.getElementById('pausePlayBtn');
-    if (pauseBtn) {
-        pauseBtn.addEventListener('click', togglePlayPause);
-    }
-    
-    // Add tap indicator
-    const tapIndicator = document.createElement('div');
-    tapIndicator.className = 'tap-indicator';
-    tapIndicator.innerHTML = '👆 Swipe left/right to change slides 👆';
-    document.body.appendChild(tapIndicator);
-    setTimeout(() => {
-        tapIndicator.style.opacity = '0';
-        setTimeout(() => tapIndicator.remove(), 1000);
-    }, 4000);
-    
-    console.log('❤️ Slideshow ready! Happy Birthday Dishu! ❤️');
+    console.log('❤️ Tap-controlled slideshow ready! Tap left/right to navigate. Happy Birthday Dishu! ❤️');
 });

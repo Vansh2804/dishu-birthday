@@ -574,3 +574,30 @@ body {
     .cake-btn { padding: 10px 25px; font-size: 0.9rem; }
     .cake-container h2 { font-size: 1.5rem; }
 }
+/* Tap hint styling */
+.tap-hint {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 40px;
+    font-size: 12px;
+    z-index: 100;
+    white-space: nowrap;
+    backdrop-filter: blur(5px);
+    font-family: sans-serif;
+    pointer-events: none;
+}
+
+@media (max-width: 768px) {
+    .tap-hint {
+        font-size: 10px;
+        white-space: normal;
+        text-align: center;
+        width: 80%;
+        bottom: 70px;
+    }
+}
